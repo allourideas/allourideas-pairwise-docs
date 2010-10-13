@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <title>Pairwise</title>
+    <link href="/flutie/stylesheets/reset.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/flutie/stylesheets/defaults.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/flutie/stylesheets/type.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/flutie/stylesheets/forms.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/flutie/stylesheets/tables.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/flutie/stylesheets/lists.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/flutie/stylesheets/screen.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+<link href="/stylesheets/pairwise.css?1256317828" media="screen" rel="stylesheet" type="text/css" />
+  </head>
+  <body class="home home-api">
+    <div class="content">
+      <div id="flash">
+  </div>
+      <div>
+  <h1>Pairwise Web Service Developer API Reference</h1>
+  <h1>Version 2.0</h1>
+  <h1>February 12, 2010</h1>
+  <h4>Pius Uzamere (pius@alum.mit.edu)</h4>
+  <hr />
+  <h2>About the API</h2>
+  <p>The API conforms to the RESTful Ruby on Rails ActiveResource pattern.  For more details on ActiveResource, please see http://api.rubyonrails.org/files/vendor/rails/activeresource/README.html.</p>
+  <h2>Questions</h2>
+  <hr />
+  <h3>Creating a new question</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions": POST params (xml)
+    note right of "Client": Authenticate using HTTP.  Requires a question parameter hash.
+    note right of "/questions": We add the question to our database
+    "/questions"-->Client: xml version of the newly created question</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Retrieving a specific question</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:id": GET (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:id": We get the question from our database
+    "/questions/:id"-->Client: xml version of the question</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Updating a question</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:id": PUT (xml)
+    note right of "Client": Authenticate using HTTP.  Requires a question parameter hash.
+    note right of "/questions/:id": We activate the question so that it can be shown to users
+    "/questions/:id"-->Client: xml version of the question</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Activating a question</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:id/activate": PUT (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:id/activate": We activate the question so that it can be shown to users
+    "/questions/:id/activate"-->Client: xml version of the question</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Suspending a question</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:id/suspend": PUT (xml)
+    note right of "Client": Authenticate using HTTP
+    note right of "/questions/:id/suspend": We suspend the question so that it will not be shown to users
+    "/questions/:id/suspend"-->Client: xml version of the question</pre>
+  </div>
+  <br />
+  <br />
+  <h2>Clicks</h2>
+  <hr />
+  <h3>Creating a click</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/clicks": POST params (xml)
+    note right of "Client": Authenticate using HTTP. Required parameters are "what_was_clicked_on" and "sid"
+    note right of "/clicks": We add the click to our database
+    "/clicks"-->Client: xml version of the newly added click</pre>
+  </div>
+  <br />
+  <br />
+  <h2>Choices</h2>
+  <hr />
+  <h3>Creating a choice</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:id/choices": POST params (xml)
+    note right of "Client": Authenticate using HTTP.  Requires a choice parameter hash.
+    note right of "/questions/:id/choices": We add the choice to our database
+    "/questions/:id/choices"-->Client: xml version of the newly added choice</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Retrieving choices</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:id/choices": GET (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:id/choices": We get the choices for the question from our database
+    "/questions/:id/choices"-->Client: xml version of the choices</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Retrieving a specific choice</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/choices/:id": GET (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:question_id/choices/:id": We get the choice from our database
+    "/questions/:question_id/choices/:id"-->Client: xml version of the choice</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Updating a specific choice</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/choices/:id": GET (xml)
+    note right of "Client": Authenticate using HTTP.  Requires a choice parameter hash.
+    note right of "/questions/:question_id/choices/:id": We get the choice from our database
+    "/questions/:question_id/choices/:id"-->Client: son version of the choice</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Activating a choice</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/choices/:id/activate_from_abroad": PUT (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:question_id/choices/:id/activate_from_abroad": We activate the choice so that it can be shown to users.  In future versions, this method should be renamed to "activate."
+    "/questions/:question_id/choices/:id/activate_from_abroad"-->Client: xml version of the choice</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Suspending a choice</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/choices/:id/update_from_abroad": PUT (json or xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:question_id/choices/:id/update_from_abroad": We suspend the choice so that it will not be shown to users.  In future versions, this method should be renamed to "suspend" or "deactivate."
+    "/questions/:question_id/choices/:id/update_from_abroad"-->Client: xml or json version of the choice</pre>
+  </div>
+  <br />
+  <br />
+  <h2>Prompts</h2>
+  <p>Prompts are different combinations of choices that can be shown to users</p>
+  <hr />
+  <h3>Retrieving a specific prompt</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/prompts/:id": GET (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:question_id/prompts/:id": We get the prompt from our database
+    "/questions/:question_id/prompts/:id"-->Client: xml version of the prompt</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Activating a prompt</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/prompts/:id/activate": PUT (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:question_id/prompts/:id/activate": We activate the prompt so that it can be shown to users
+    "/questions/:question_id/prompts/:id/activate"-->Client: xml version of the prompt</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Suspending a prompt</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/prompts/:id/suspend": PUT (xml)
+    note right of "Client": Authenticate using HTTP.
+    note right of "/questions/:question_id/prompts/:id/suspend": We suspend the prompt so that it will not be shown to users
+    "/questions/:question_id/prompts/:id/suspend"-->Client: xml version of the prompt</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Vote for the choice on the left of the prompt</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/prompts/:id/vote_left": POST params (xml)
+    note right of "Client": Authenticate using HTTP.  Requires an 'auto' parameter corresponding to the session id.
+    note right of "/questions/:question_id/prompts/:id/vote_left": We add a vote for the choice on the left
+    "/questions/:question_id/prompts/:id/vote_left"-->Client: xml version of a new prompt for the question</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Vote for the choice on the right of the prompt</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/prompts/:id/vote_right": POST params (xml)
+    note right of "Client": Authenticate using HTTP.  Requires an 'auto' parameter corresponding to the session id.
+    note right of "/questions/:question_id/prompts/:id/vote_right": We add a vote for the choice on the right
+    "/questions/:question_id/prompts/:id/vote_right"-->Client: xml version of a new prompt for the question</pre>
+  </div>
+  <br />
+  <br />
+  <h3>Skip prompt</h3>
+  <div class='wsd' wsd_style='napkin'>
+    <pre>Client->"/questions/:question_id/prompts/:id/skip": POST params (xml)
+    note right of "Client": Authenticate using HTTP
+    note right of "/questions/:question_id/prompts/:id/skip": We skip the prompt
+    "/questions/:question_id/prompts/:id/skip"-->Client: xml version of a new prompt for the question</pre>
+  </div>
+  <br />
+  <br />
+  <script src='http://www.websequencediagrams.com/service.js' type='text/javascript'></script>
+</div>
+
+      <script src="/javascripts/jquery.js?1256317828" type="text/javascript"></script>
+<script src="/javascripts/jquery-ui.js?1256317828" type="text/javascript"></script>
+<script src="/javascripts/jrails.js?1256317828" type="text/javascript"></script>
+<script src="/javascripts/application.js?1256317828" type="text/javascript"></script>
+
+
+    </div>
+  </body>
+</html>

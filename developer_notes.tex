@@ -1,0 +1,731 @@
+\documentclass[11pt]{book}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{DRAFT Developer Notes}
+\author{Pius Uzamere II}
+\date{February 12, 2010}
+
+\begin{document}
+\maketitle
+
+\chapter{System Overview}
+
+\emph{Note that this document assumes general knowledge of the concepts behind the All Our Ideas and Pairwise projects.}
+
+\section{30-Second System Summary}
+The CGSCI system is written in Ruby on Rails and consists of the All Our Ideas (AOI) front-end and the Pairwise (PW) back-end.  AOI is the user facing interface where respondents can vote and interact with questions, prompts, and ideas.  PW interacts directly with the database and makes the voting, scoring, prompt generation, and other core functionality available to clients like AOI via an API.  AOI and PW communicate over HTTP using the Rails "ActiveResource" pattern, a RESTful, XML-based protocol for serializing and deserializing business objects over a network.  The AOI front-end heavily leverages AJAX and Javascript, particularly JQuery, to implement its interface.
+
+\section{Domain Objects}
+
+\subsection{AOI}
+
+\begin{description}
+\item[Question] Self-explanatory. Represents the question upon which the idea marketplace is based.
+\item[Prompt] An ordered set of choices belonging to a question.
+\item[Choice] Represents one of the voteable objects in a prompt.  Refers to an item.
+\item[Item] The actual content of a choice.  An idea or a photo, for instance.
+\item[User] Object used primary to persist question administration features.
+\item[Click] Utility object used for tracking user activity.
+\item[Earl] Utility object used to map custom URLs to questions.
+\item[RemoteUser]  Utility object used to represent the logged in AOI user in PW.  \emph{Deprecated.}
+\end{description}
+
+
+\subsection{PW}
+
+\begin{description}
+\item[Question] Represents a question.
+\item[Prompt] An ordered set of choices belonging to a question.
+\item[Choice] Represents one of the voteable objects in a prompt.  Refers to an item.
+\item[Item] The actual content of a choice.  An idea or a photo, for instance.
+\item[Visitor] An ordered set of choices belonging to a question.
+\item[Vote] An object representing a visitor's action to vote for a choice in a prompt.
+\item[Skip] An object representing a visitor's action of skipping a prompt.
+\item[User] Object used to administer API access.  AOI is a user, for instance.
+\item[Click] Utility object used for tracking visitor activity.
+
+
+\end{description}
+
+
+
+\chapter{All Our Ideas Reference}
+
+\section{Question}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Question is an ActiveResource model corresponding to the Pairwise model of the same name.  It relies upon the Pairwise Question model invariants.
+
+\subsection{Instance Methods}
+
+\begin{description}
+  
+  \item[fq\_earl]  \hfill \\
+  \emph{} Returns a string representing the fully qualified URL of the question using the custom name.  For historical reasons, this function is now poorly named and should be renamed in a future refactoring to avoid confusion with the Earl class.
+  
+  \item[earl]  \hfill \\
+  \emph{} Returns a string representing the relative URL of the question using the custom name.  For historical reasons, this function is now poorly named and should be renamed in a future refactoring to avoid confusion with the Earl class.
+  
+  \item[slug]  \hfill \\
+  \emph{} Returns a string representing the custom name of the question.
+  
+  \item[name]  \hfill \\
+  \emph{} Returns the "name" of the question, which is actually the question text.  For instance, "Which do you prefer from your student government?"
+  
+  
+  \item[the\_name]  \hfill \\
+  \emph{} Returns the "name" of the question, which is actually the question text.  For instance, "Which do you prefer from your student government?"  Should be deprecated in favor of the name method.
+  
+  \item[url]  \hfill \\
+  \emph{} Returns the URL of the question.  Deprecated in favor of the fq\_earl and earl methods.
+
+
+  \item[question\_ideas]  \hfill \\
+  \emph{} Returns a string representing the question ideas in the event that question creation fails and AOI needs to re-populate the ideas field on the question creation form.
+  
+  \item[creator\_id]  \hfill \\
+  \emph{} Returns an integer value corresponding to the id of the local user that owns the question.  Contains a workaround for an as yet unsolved bug where the Pairwise API will return an Array instead of an Integer for the creator\_id.
+
+  \item[creator]  \hfill \\
+  \emph{} Returns the User that owns the question.
+  
+  \item[validate\_me]  \hfill \\
+  \emph{} Implements validation for the model.  Typically Rails handles validation automatically, but this functionality needed to be implemented manually because Rails handles validation of ActiveResource models poorly.
+  
+  
+\end{description}
+
+
+\subsection{Class Methods}
+
+\begin{description}
+
+\item[find\_by\_name]  \hfill \\
+\emph{} Returns a boolean value corresponding to whether or not the choice is active.
+
+\item[find\_id\_by\_name]  \hfill \\
+\emph{} Returns a boolean value corresponding to whether or not the choice is active.
+
+\end{description}
+
+\section{Earl}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Earl is a simple, local utility model used to map questions to their custom names and URLs.  It is used quite frequently in the code and future developers should seek to incorporate this functionality into the Question model and deprecate the class.
+
+\subsection{Instance Methods}
+
+\begin{description}
+  
+  \item[question]  \hfill \\
+  \emph{Takes an Boolean barebones parameter.} Returns the Question associated with the earl.  Because Question is an ActiveResource model, this method will trigger a remote call to the AOI API.  For performance reasons, the "barebones" option was added in order to request a stripped down version of the question.  In particular, a "barebones" request for a question will skip the prompt picking and sending that AOI does by default on standard Question requests.  In general, "barebones" mode should be used unless a prompt is needed with the question.  Also, this method should generally not be called more than once in a code block; rather, the developer should store the value in memory to avoid unnecessary API requests.
+
+\end{description}
+
+
+\subsection{Class Methods}
+
+None.
+
+\section{Choice}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Choice is an ActiveResource model corresponding to the Pairwise model of the same name.
+
+\subsection{Instance Methods}
+
+\begin{description}
+  
+  \item[question\_id]  \hfill \\
+  \emph{} Returns an integer representing the id of the question with which the item is associated.
+  
+  \item[path]  \hfill \\
+  \emph{} Returns a string representing the relative URL for the model's "show" page.
+  
+  \item[data]  \hfill \\
+  \emph{} Returns a string representing the data associated with the choice.  In practice, this is the text of the idea.
+  
+  \item[activate!]  \hfill \\
+  \emph{} Activates the choice in the AOI system.
+  
+  \item[active?]  \hfill \\
+  \emph{} Returns a boolean value corresponding to whether or not the choice is active.
+
+\end{description}
+
+
+\subsection{Class Methods}
+
+None.
+
+
+\section{Item}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Item is an ActiveResource model corresponding to the Pairwise model of the same name.  This model has been deprecated in favor of Choice.
+
+\subsection{Instance Methods}
+
+\begin{description}
+  
+  \item[question\_id]  \hfill \\
+  \emph{} Returns an integer representing the id of the question with which the item is associated.
+  
+  \item[path]  \hfill \\
+  \emph{} Returns a string representing the relative URL for the model's "show" page.
+
+\end{description}
+
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+\section{Prompt}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Prompt is an ActiveResource model corresponding to the Pairwise model of the same name.  In AOI this model has little responsibility.
+
+\subsection{Instance Methods}
+
+None.
+
+
+\subsection{Class Methods}
+
+None.
+
+
+
+\section{Click}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Click is a utility ActiveResource model corresponding to the model of the same name in the Pairwise system.
+
+\subsection{Instance Methods}
+
+None.
+
+\subsection{Class Methods}
+
+\begin{description}
+	\item[record]  \hfill \\
+  \emph{Takes a String sid parameter, a String clicked\_on parameter, and an optional User user parameter.}  Currently instantiates but does not save an instance of Click.  The sid parameter is meant to be a unique identifier for the current session, while the clicked\_on parameter is a representation of metadata about the click.  The user parameter is currently ignored.  Returns true.
+
+\end{description}
+
+
+\section{User}
+
+\subsection{Invariants and Idiosyncrasies}
+
+User is used primarily to persist question administration information.  This User model should not be confused with the  User model in the Pairwise system.  The User model in AOI is local.  When an AOI user creates a Question, they must either register (creating a new User instance) or login (finding an existing User instance).
+
+\subsection{Instance Methods}
+
+\begin{description}
+  
+  \item[owns?]  \hfill \\
+  \emph{Takes an Earl earl parameter.} Returns a boolean value corresponding to whether or not the User instance owns the given Earl.
+  
+	\item[set\_remote\_session\_key!]  \hfill \\
+  \emph{Takes a String sid parameter.}  Sets the remote session key to the sid parameter.  Deprecated.
+
+	\item[remote\_user]  \hfill \\
+  \emph{Takes a String sid parameter.} Finds a remote user associated with the given session id.  Deprecated.
+
+\end{description}
+
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+
+
+
+
+
+\section{IdeaMailer}
+
+\subsection{Invariants and Idiosyncrasies}
+
+IdeaMailer is a utility model used for mailing out notifications via e-mail.
+
+\subsection{Instance Methods}
+
+\begin{description}
+  
+  \item[notification]  \hfill \\
+  \emph{Takes a User user parameter, a Question question parameter, an Integer question\_id, a Choice choice parameter, and an Integer choice\_id parameter.}  This method sends the e-mail that question administrators see when a new idea has been submitted and ideas are set to require activation.
+  
+	\item[notification\_for\_active]  \hfill \\
+  \emph{Takes a User user parameter, a Question question parameter, an Integer question\_id, a Choice choice parameter, and an Integer choice\_id parameter.}  This method sends the e-mail that question administrators see when a new idea has been submitted and ideas are set to auto-activate.
+
+	\item[setup\_email]  \hfill \\
+  \emph{Takes a User user parameter.} Utility method that sets common variables for the e-mail message.
+
+\end{description}
+
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+
+
+
+
+
+
+
+\section{RemoteUser}
+
+\subsection{Invariants and Idiosyncrasies}
+
+RemoteUser is a utility ActiveResource model corresponding to the User model in the Pairwise system.  After migrating the Pairwise architecture to the current User and Visitor division of responsibility, this model was deprecated.
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[set\_remote\_session\_key!]  \hfill \\
+  \emph{Takes a String sid parameter.}  Sets the remote session key to the sid parameter.  Deprecated.
+
+	\item[latest\_question]  \hfill \\
+  \emph{} Finds the latest Question in the local system.  Deprecated.
+
+	\item[email\_confirmed?]  \hfill \\
+  \emph{} Returns a boolean value corresponding to whether or not the current remote user has had their email confirmed.  Deprecated.
+
+\end{description}
+
+
+\subsection{Class Methods}
+
+\begin{description}
+	\item[find\_by\_sid]  \hfill \\
+  \emph{Takes a String sid parameter.}  Finds and returns the User in the Pairwise system based on the current session id.  Deprecated.
+
+	\item[auto\_create\_user\_object\_from\_sid]  \hfill \\
+  \emph{Takes a String sid parameter.}  Finds and returns the User in the Pairwise system based on the current session id.  Deprecated.
+
+\end{description}
+
+
+
+
+
+
+\chapter{Pairwise Reference}
+
+\section{Question}
+
+\subsection{Invariants and Idiosyncrasies}
+
+In general, questions must always have at least two active choices.
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[itemcount]  \hfill \\
+  Returns the number of items for a question.  As of this writing, relies on the 'choices\_count' counter cache.
+  	\item[picked\_prompt]  \hfill \\
+  \emph{Takes an integer rank parameter, defaulting to two. Memoized.}  Randomly selects a rank \emph{rank} set of active items from the question's universe of items and finds or (if necessary) creates a prompt with those items bound as the choices.  Relies on the distinct\_array\_of\_choice\_ids function.
+  
+	\item[picked\_prompt\_id]  \hfill \\
+  Picks a prompt (or uses the memoized prompt) and returns its id.  Relies on the "picked\_prompt" function.
+  
+  \item[distinct\_array\_of\_choiceids]  \hfill \\
+  \emph{Takes an integer rank parameter, defaulting to two; takes a boolean only\_active parameter that defaults to two. }  Randomly selects a rank \emph{rank} set of item ids from the question's universe of associated item ids.  If only\_active is true, the universe will be restricted only to ids of active items.
+  
+  An important pre-condition for this function to terminate is that there must be at least two choices in the universe of ids.
+  
+  \item[left\_choice\_text]  \hfill \\
+  \emph{}  Returns the data associated with the choice on the "left-hand-side" of the question's currently picked prompt.  Relies on the "picked\_prompt" method as well as Prompt's left\_choice instance method, and Item's data instance method.  Should be refactored to reflect recent denormalization of the schema and prune the dependency tree (cf. Law of Demeter).
+  
+  \item[right\_choice\_text]  \hfill \\
+  \emph{}  Returns the data associated with the choice on the "right-hand-side" of the question's currently picked prompt.  Relies on the "picked\_prompt" method as well as Prompt's right\_choice instance method, and Item's data instance method.  Should be refactored to reflect recent denormalization of the schema and prune the dependency tree (cf. Law of Demeter).
+  
+  
+  \item[voted\_on\_by\_user]  \hfill \\
+  \emph{Takes a User parameter u.}  Returns a boolean value reflecting whether or not a user has voted on the current question.
+  
+  \item[should\_autoactivate\_ideas]  \hfill \\
+  \emph{}  Returns a boolean value reflecting whether or not the question should auto-activate ideas.
+  
+  \item[ensure\_at\_least\_two\_choices]  \hfill \\
+  \emph{Callback run after a question is saved.}  This code is responsible for initial satisfaction of the invariant that every question has at least two choices.  In particular, it creates choices based on user input if given and creates sample choices for the question if not.
+  
+\end{description}  
+  
+\subsection{Class Methods}
+
+\begin{description}
+  
+  \item[voted\_on\_by]  \hfill \\
+  \emph{Takes a User parameter u, assumes it is being run on an enumeration of questions.}  Returns the first question that's been voted on by u.  
+  
+\end{description}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Prompt}
+
+\subsection{Invariants and Idiosyncrasies}
+
+In general, prompts must always have exactly two choices, which are pairwise unique.  There is internal API flexibility for arbitary rank prompts, but not much testing or implementation around this functionality yet.
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[choices]  \hfill \\
+  Returns an array of choices for the prompt, ordered from left to right.
+
+  	\item[active]  \hfill \\
+  \emph{}  Returns a boolean value reflecting whether or not the prompt is active.  Performs a logical AND on the active status of the left hand choice and the right hand choice.
+  
+  \item[left\_choice\_text]  \hfill \\
+  \emph{}  Returns the data associated with the choice on the "left-hand-side" of the prompt.  Relies on Item's data instance method.  Should be refactored to reflect recent denormalization of the schema and prune the dependency tree (cf. Law of Demeter).
+  
+  \item[right\_choice\_text]  \hfill \\
+  \emph{}  Returns the data associated with the choice on the "right-hand-side" of the prompt.  Relies on Item's data instance method.  Should be refactored to reflect recent denormalization of the schema and prune the dependency tree (cf. Law of Demeter).
+  
+	\item[left\_choice\_id]  \hfill \\
+  Returns the id of the left side choice.
+  
+  
+	\item[right\_choice\_id]  \hfill \\
+  Returns the id of the left side choice.
+ 
+ 
+  \item[voted\_on\_by\_user]  \hfill \\
+  \emph{Takes a User parameter u.}  Returns a boolean value reflecting whether or not a user has voted on the current prompt.
+  
+\end{description}  
+  
+\subsection{Class Methods}
+
+\begin{description}
+  
+  \item[voted\_on\_by]  \hfill \\
+  \emph{Takes a User parameter u, assumes it is being run on an enumeration of prompts.}  Returns the first prompt that's been voted on by u.  
+  
+\end{description}
+
+
+
+
+\section{Choice}
+
+\subsection{Invariants and Idiosyncrasies}
+
+The data model behind the choice model has evolved from a highly normalized form (where a "choice" was strictly a join model between an "item" and a "prompt") to a largely normalized form (where a "choice" carries practically all of the data and responsibilities once given to "item").
+
+
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[question\_name]  \hfill \\
+  Returns the name of the question.
+
+  \item[item\_data]  \hfill \\
+  \emph{}  Returns the item data
+  
+  \item[compute\_score]  \hfill \\
+  \emph{}  Computes the score of the choice.  See "Scoring" for more information on this.
+  
+  \item[compute\_score!]  \hfill \\
+  \emph{}  Computes the score of the choice and updates the score attribute.  Relies on the compute\_score method.
+  
+  \item[lose!]  \hfill \\
+  \emph{}  Increments the loss count by 1.
+  
+  \item[wins]  \hfill \\
+  \emph{}  Returns an integer representing the number of votes for the choice.
+  
+  \item[losses]  \hfill \\
+  \emph{}  Returns an integer representing the loss count.
+  
+  \item[wins\_plus\_losses]  \hfill \\
+  \emph{}  Returns an integer value reflecting sum of the wins and losses.s
+  
+
+  
+	\item[before\_create]  \hfill \\
+  This callback initializes the score, activates the choice when appropriate, and creates an instance of "item" if necessary.  Future developers should consider deprecating this latter "item" related behavior as the data model becomes more denormalized and evolves to put more "item" responsibility onto "choice."
+  
+  
+	\item[generate\_prompts]  \hfill \\
+  \emph{Deprecated.} Generates all possible prompts based on the addition of the current choice to the universe of choices for the question.  This approach has been deprecated in favor of just-in-time prompt creation.
+ 
+ 
+
+  
+\end{description}
+
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+
+
+
+
+\section{Item}
+
+\subsection{Invariants and Idiosyncrasies}
+
+The "item" model has lost much of its responsibility to "choice" as the system's data model has become more denormalized.  Future developers should consider deprecating "item" entirely in favor of choice.
+
+\subsection{Instance Methods}
+
+None.
+
+\subsection{Class Methods}
+
+\begin{description}
+	\item[mass\_insert]  \hfill \\
+  Database-specific method for bulk inserting items.  Useful during mass data migrations.
+
+\end{description}
+
+
+
+
+
+
+\section{Visitor}
+
+\subsection{Invariants and Idiosyncrasies}
+
+The "visitor" model was once the main interface for core client actions, but serves now primarily as a utility class, with the core actions interface being consolidated in the User model.
+
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[owns?]  \hfill \\
+  \emph{Takes a Question question parameter.} Returns a boolean value corresponding to whether the current instance of Visitor created the given question
+
+
+	\item[vote\_for!]  \hfill \\
+  \emph{Takes a Prompt prompt parameter and an Integer ordinality parameter.} This function has no defined return value, but does guarantee the post-conditions that (1) a vote by the visitor has been associated with the choice at the given ordinality within the prompt, (1) a vote by the visitor has been associated with the prompt, (3) a vote by the visitor has been associated with the question, (4) a new loss has been recorded for the other choices in the prompt.
+  
+  \item[skip!]  \hfill \\
+  \emph{Takes a Prompt prompt parameter.} This function has no defined return value, but does guarantee the post-condition a skip by the visitor has been associated with the prompt.
+  
+\end{description}
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+
+
+
+
+
+\section{User}
+
+\subsection{Invariants and Idiosyncrasies}
+
+The "user" model has evolved to provide the interface for any core action that an API client (e.g. All Our Ideas) would want to perform.  For voting and skipping this model delegates responsibility for the "heavy lifting" for its actions to the "visitor" model.  Actions used to require an instance of Visitor, but now simply take a string-based "visitor\_identifier" that is used to find or create the appropriate instance of Visitor.  This change reduces the dependency of API clients on the internal Visitor implementation; clients need only have a persistent string associated with each of their users in order to track their actions throughout Pairwise.
+
+The model has the invariant that there is at least one "visitor" instance, which is considered the "default" visitor.
+
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[default\_visitor]  \hfill \\
+  \emph{Deprecated.}  Returns a generic default "visitor" instance for the case in which the User tries to take an action without specifying a visitor.  Future refactorings should seek to remove use of this function in favor of code that uses the new interface based on the "visitor\_identifier" parameter.
+
+  \item[create\_question]  \hfill \\
+  \emph{Takes a String visitor\_identifier parameter; takes a Hash question\_params parameter. }  Finds or creates a Visitor by the visitor identifier and then creates and returns a question based on the parameters.  Question will be associated with the current User.  Relies on the find\_or\_create\_by\_identifier class method for Visitor.
+  
+  \item[create\_choice]  \hfill \\
+  \emph{Takes a String visitor\_identifier; takes a Question question parameter; takes a Hash choice\_params parameter that defaults to the empty hash.}  Finds or creates a Visitor by the visitor identifier and then creates and returns a choice based on the parameters.  Choice will be associated with the question.  Relies on the owns? instance method and the find\_or\_create\_by\_identifier class method for Visitor and the notify\_question\_owner\_that\_new\_choice\_has\_been\_added instance method for User.
+  
+  \item[record\_vote]  \hfill \\
+  \emph{Takes a String visitor\_identifier; takes a Prompt prompt parameter; takes an Integer ordinality parameter.}  Finds or creates a Visitor by the visitor identifier and then creates a vote for the choice at the given ordinality within the prompt.  This function has no defined return value, but does guarantee the post-conditions that (1) a vote by the visitor has been associated with the choice, (2) a vote by the visitor has been associated with the prompt, (3) a vote by the visitor has been associated with the question, (4) a new loss has been recorded for the other choices in the prompt.  Relies on the vote\_for! instance method and the find\_or\_create\_by\_identifier class method for Visitor.
+  
+  The current vote recording implementation evolved to be highly denormalized, recording three separate votes.  Unfortunately, there is currently no easy way to determine the loser in a given vote.  To solve this issue in the pairwise case, future developers should add a loser\_id attribute to the Vote class and persist the losing choice id with each vote.  For the general case in which there can be arbitrary rank prompts, future developers should add a loser\_ids attribute that serializes and deserializes an array of choice ids corresponding to the losers.
+  
+  \item[record\_skip]  \hfill \\
+  \emph{Takes a String visitor\_identifier; takes a Prompt prompt parameter.}  Finds or creates a Visitor by the visitor identifier and then creates a skip for the prompt.  This function has no defined return value, but does guarantee the post-condition a skip by the visitor has been associated with the prompt. Relies on the skip! instance method and the find\_or\_create\_by\_identifier class method for Visitor.
+  
+
+	\item[activate\_question]  \hfill \\
+  \emph{Takes an Integer question\_id and an options parameter.} Finds the question using the question\_id and activates it.  Currently does not use the options parameter for anything.  Relies on the activate! instance method of Question, which is provided by the Activation mixin as of this writing.
+  
+  
+	\item[deactivate\_question]  \hfill \\
+  \emph{Takes an Integer question\_id and an options parameter.} Finds the question using the question\_id and deactivates it.  Currently does not use the options parameter for anything.  Relies on the deactivate! instance method of Question, which is provided by the Activation mixin as of this writing.
+
+	\item[activate\_choice]  \hfill \\
+  \emph{Takes an Integer choice\_id and an options parameter.} Finds the choice using the choice\_id and activates it.  Currently does not use the options parameter for anything.  Relies on the activate! instance method of Choice, which is provided by the Activation mixin as of this writing.
+  
+  
+	\item[deactivate\_choice]  \hfill \\
+  \emph{Takes an Integer choice\_id and an options parameter.} Finds the choice using the choice\_id and activates it.  Currently does not use the options parameter for anything.  Relies on the deactivate! instance method of Choice, which is provided by the Activation mixin as of this writing.
+  
+  \item[after\_create]  \hfill \\
+  This callback guarantees the User invariant that there is at least one "visitor" instance, which is considered the "default" visitor.
+  
+  \item[notify\_question\_owner\_that\_new\_choice\_has\_been\_added]  \hfill \\
+  \emph{Takes a Choice choice parameter.}; Currently a no-op.
+  
+\end{description}
+
+
+\section{Vote}
+
+\subsection{Invariants and Idiosyncrasies}
+
+The "vote" model is mostly small and simple, but has a bit of complexity in that it implements polymorphism.  In particular, a vote can be associated with any type of domain object.  This design decision makes it easy to directly assign votes at the "item", "prompt", "choice," and "question" levels.
+
+\subsection{Instance Methods}
+
+None.
+
+
+\subsection{Class Methods}
+
+None.
+
+\section{Skip}
+
+\subsection{Invariants and Idiosyncrasies}
+
+The "skip" model is analogous to the vote model, but simpler in that it does not implement polymorphism.  Skips can only be associated with "prompts."  Other relationships can be inferred as necessary, but determining them will lead to running database joins.  If it becomes necessary to do these computations in real-time, developers should consider implementing polymorphism as seen in the "vote" model.
+
+
+\subsection{Instance Methods}
+
+None.
+
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+
+
+\section{Click}
+
+\subsection{Invariants and Idiosyncrasies}
+
+Click is an experimental, incomplete utility model for implementing generic, rudimentary click tracking at the API level.  Clicks are associated with a site (User) and a Visitor.  Generally, the methods herein are brittle and heavily dependent on the string data format of its attributes.
+
+\subsection{Instance Methods}
+
+\begin{description}
+	\item[geoip\_link]  \hfill \\
+  Returns a String link to an external geolocation of the IP.  Relies on the ip method.
+
+	\item[geoip\_url]  \hfill \\
+  Returns a String URL for external geolocation of the IP.  Relies on the ip method.
+  
+  \item[ip]  \hfill \\
+  Returns a String representation of the IP address from which the click originated.  Relies on the string represented of the what\_was\_clicked attribute, which is only informally specified.
+  
+  \item[to\_html]  \hfill \\
+  \emph{Deprecated.}  Returns a String HTML manifestation of the click.
+
+\end{description}
+
+None.
+
+\subsection{Class Methods}
+
+None.
+
+
+
+
+
+
+
+
+\chapter{System Performance and Correctness}
+
+\section{Performance}
+
+There are three main factors to consider with regards to system performance.
+
+\begin{description}
+	\item[Database]  \hfill \\
+  \emph{Primarily affects PW.}  At the time of this writing, the system uses a relational database system with a mostly normalized data model.  In general, when writing scoring, prompt generation, and idea retrieval code, slow database operations like randomization and joins should be avoided.  Explore strategic denormalization if necessary.
+  	\item[Long Operations in the Request Cycle]  \hfill \\
+  \emph{Primarily affects PW.}  The system has certain actions (notably scoring) that have the potential to be long running.  Actions like these should be kept out of the request cycle as much as possible.  In other words, a user should not have to wait for these long running items to complete before the application returns feedback to the user.  Over time, it may be prudent to investigated adding a job queue in order to conduct certain actions asynchronously.
+	\item[Payload Deserialization]  \hfill \\
+  \emph{Affects both AOI and PW.}  There are many benefits to decoupling AOI from PW, but also some drawbacks that need to be mitigated.  The most notable of these is with payload deserialization, the process by which XML sent by PW is converted to an in-memory domain object in AOI.  A new developer working with these two systems should be sure to become familiar with the ins and outs of ActiveResource in order to write efficient code. Generally, the code should be written to (1) reduce the number of roundtrips needed between the two servers, and (2) reduce the amount of XML that needs to be sent by PW and parsed by AOI.
+\end{description}
+
+\section{Correctness}
+
+There are three primary threats in the system to correctness.
+
+\begin{description}
+	\item[Synchronization]  \hfill \\
+  \emph{Affects both AOI and PW.}  Performance needs will cause the data model to tend towards denormalization both internally (duplication within AOI schema) and externally (duplication between AOI and PW).  Also, AOI relies heavily on asynchronous action (AJAX) to maintain a high-performing user interface.  Both of these factors increase the risk of data becoming out of sync with either its presentation to the user or alternate manifestations throughout the database.  Developers augmenting the system should be sensitive to this when writing code.
+  	\item[Caching]  \hfill \\
+  \emph{Affects both AOI and PW.}  Strictly speaking, the correctness risk associated with caching is an instance of synchronization risk, but it is worth setting apart.  As caching becomes more attractive with increased load on the system, it will become important to be mindful of the need to invalidate the cache as soon as cached content may have become stale.
+    	\item[Feature Releases Without Commensurate Testing Releases]  \hfill \\
+  \emph{Affects both AOI and PW.}  This is a procedural issue, but an important one.  With all systems, there is a tendency to want to write and push features immediately, but delay testing them until later.  While this approach can work, it is recommended that developers and stakeholders in this project prioritize testing and stability releases so as to maintain health of the system and increase the velocity with which new features can be reliably pushed to production.
+\end{description}
+
+
+  
+ \end{document}  
